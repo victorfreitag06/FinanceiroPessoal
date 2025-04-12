@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Financeiro da Minha Princesa 💖</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #ffe0ec, #fff4f8);
+      color: #333;
+    }
+    header {
+      background-color: #f78fb3;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .card h3 {
+      margin-top: 0;
+      color: #f78fb3;
+    }
+    .flex {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    form input, form button, select {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+    form button {
+      background-color: #f78fb3;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    form button:hover {
+      background-color: #f55a8c;
+    }
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .table th, .table td {
+      padding: 10px;
+      border: 1px solid #f0c8d7;
+      text-align: left;
+    }
+    .income { color: green; }
+    .expense { color: red; }
+    @media (max-width: 600px) {
+      .flex { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Financeiro da Minha Princesa 💖</h1>
+  </header>
+
+  <main class="container">
+    <div class="card">
+      <h3>Resumo</h3>
+      <p>Saldo atual: <strong id="saldo">R$ 0,00</strong></p>
+      <p>Ganhos: <span class="income" id="totalGanhos">R$ 0,00</span></p>
+      <p>Despesas: <span class="expense" id="totalDespesas">R$ 0,00</span></p>
+    </div>
+
+    <div class="card">
+      <label for="mesInsercao">Mês de inserção:</label>
+      <input type="month" id="mesInsercao">
+    </div>
+
+    <div class="flex">
+      <div class="card" style="flex: 1">
+        <h3>Cadastro de Ganhos</h3>
+        <form id="formGanho">
+          <input type="number" step="0.01" placeholder="Valor" required id="ganhoValor"><br>
+          <input type="text" placeholder="Descrição" required id="ganhoDescricao"><br>
+          <input type="date" required id="ganhoData"><br>
+          <input type="text" placeholder="Categoria (opcional)" id="ganhoCategoria"><br>
+          <button type="submit">Adicionar Ganho</button>
+        </form>
+      </div>
+      <div class="card" style="flex: 1">
+        <h3>Cadastro de Despesas</h3>
+        <form id="formDespesa">
+          <input type="number" step="0.01" placeholder="Valor" required id="despesaValor"><br>
+          <input type="text" placeholder="Descrição" required id="despesaDescricao"><br>
+          <input type="date" required id="despesaData"><br>
+          <input type="text" placeholder="Categoria (opcional)" id="despesaCategoria"><br>
+          <button type="submit">Adicionar Despesa</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Lista de Transações</h3>
+      <select id="filtroTipo">
+        <option value="todos">Todos</option>
+        <option value="ganho">Ganhos</option>
+        <option value="despesa">Despesas</option>
+      </select>
+      <input type="text" id="filtroCategoria" placeholder="Categoria">
+      <input type="month" id="filtroMes">
+      <table class="table" id="tabelaTransacoes">
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Valor</th>
+            <th>Descrição</th>
+            <th>Data</th>
+            <th>Categoria</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    let transacoes = JSON.parse(localStorage.getItem('transacoes')) || [];
+
+    function atualizarResumo() {
+      const ganhos = transacoes.filter(t => t.tipo === 'ganho');
+      const despesas = transacoes.filter(t => t.tipo === 'despesa');
+      const totalGanhos = ganhos.reduce((sum, t) => sum + parseFloat(t.valor), 0);
+      const totalDespesas = despesas.reduce((sum, t) => sum + parseFloat(t.valor), 0);
+      const saldo = totalGanhos - totalDespesas;
+
+      document.getElementById('totalGanhos').textContent = `R$ ${totalGanhos.toFixed(2)}`;
+      document.getElementById('totalDespesas').textContent = `R$ ${totalDespesas.toFixed(2)}`;
+      document.getElementById('saldo').textContent = `R$ ${saldo.toFixed(2)}`;
+    }
+
+    function salvarTransacoes() {
+      localStorage.setItem('transacoes', JSON.stringify(transacoes));
+    }
+
+    function renderizarTabela() {
+      const tbody = document.querySelector('#tabelaTransacoes tbody');
+      tbody.innerHTML = '';
+      const tipoFiltro = document.getElementById('filtroTipo').value;
+      const categoriaFiltro = document.getElementById('filtroCategoria').value.toLowerCase();
+      const mesFiltro = document.getElementById('filtroMes').value;
+
+      const filtradas = transacoes.filter(t => {
+        const passaTipo = tipoFiltro === 'todos' || t.tipo === tipoFiltro;
+        const passaCategoria = !categoriaFiltro || (t.categoria && t.categoria.toLowerCase().includes(categoriaFiltro));
+        const passaMes = !mesFiltro || t.data.startsWith(mesFiltro);
+        return passaTipo && passaCategoria && passaMes;
+      });
+
+      filtradas.forEach((t, index) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="${t.tipo === 'ganho' ? 'income' : 'expense'}">${t.tipo}</td>
+          <td>R$ ${parseFloat(t.valor).toFixed(2)}</td>
+          <td>${t.descricao}</td>
+          <td>${t.data}</td>
+          <td>${t.categoria || '-'}</td>
+          <td><button onclick="excluirTransacao(${index})">Excluir</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function excluirTransacao(index) {
+      transacoes.splice(index, 1);
+      salvarTransacoes();
+      atualizarResumo();
+      renderizarTabela();
+    }
+
+    document.getElementById('formGanho').addEventListener('submit', e => {
+      e.preventDefault();
+      const valor = document.getElementById('ganhoValor').value;
+      const descricao = document.getElementById('ganhoDescricao').value;
+      const data = document.getElementById('ganhoData').value;
+      const categoria = document.getElementById('ganhoCategoria').value;
+      transacoes.push({ tipo: 'ganho', valor, descricao, data, categoria });
+      salvarTransacoes();
+      atualizarResumo();
+      renderizarTabela();
+      e.target.reset();
+    });
+
+    document.getElementById('formDespesa').addEventListener('submit', e => {
+      e.preventDefault();
+      const valor = document.getElementById('despesaValor').value;
+      const descricao = document.getElementById('despesaDescricao').value;
+      const data = document.getElementById('despesaData').value;
+      const categoria = document.getElementById('despesaCategoria').value;
+      transacoes.push({ tipo: 'despesa', valor, descricao, data, categoria });
+      salvarTransacoes();
+      atualizarResumo();
+      renderizarTabela();
+      e.target.reset();
+    });
+
+    document.getElementById('filtroTipo').addEventListener('change', renderizarTabela);
+    document.getElementById('filtroCategoria').addEventListener('input', renderizarTabela);
+    document.getElementById('filtroMes').addEventListener('change', renderizarTabela);
+
+    atualizarResumo();
+    renderizarTabela();
+  </script>
+</body>
+</html>
